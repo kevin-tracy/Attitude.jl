@@ -1,0 +1,4 @@
+name = "Attitude"
+uuid = "8b3d34c0-dc4a-4a06-a8c8-4215f240a648"
+authors = ["Kevin Tracy <ktracy@stanford.edu>"]
+version = "0.1.0"
