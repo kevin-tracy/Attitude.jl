@@ -591,5 +591,11 @@ function phi_shorter(phi)
     return r*wrap_to_pm_pi(θ)
 end
 
+# tests
+export run_all_attitude_tests
+
+function run_all_attitude_tests()
+    include(joinpath(dirname(@__FILE__),"attitude_fx_tests.jl"))
+end
 
 end # module
