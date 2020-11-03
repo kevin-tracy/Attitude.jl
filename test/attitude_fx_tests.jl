@@ -83,7 +83,7 @@ end
 
             x_new_dcm = Q*x_old
 
-            x_new_quaternion = H()'*(q ⊙ (H()*x_old) ⊙ qconj(q))
+            x_new_quaternion = H_mat()'*(q ⊙ (H_mat()*x_old) ⊙ qconj(q))
 
             @test isapprox(x_new_expm,x_new_dcm,rtol = 1e-6)
 
@@ -140,8 +140,8 @@ end
             dcm_g = dcm_from_g(g)
             dcm_p = dcm_from_p(p)
 
-            @test matrix_isapprox(dcm_q,dcm_g,1e-7)
-            @test matrix_isapprox(dcm_q,dcm_p,1e-7)
+            @test isapprox(vec(dcm_q),vec(dcm_g),rtol = 1e-6)
+            @test isapprox(vec(dcm_q),vec(dcm_p),rtol = 1e-6)
 
             @test isapprox(dcm_q*x,dcm_p*x,rtol = 1e-6)
             @test isapprox(dcm_q*x,dcm_g*x,rtol = 1e-6)

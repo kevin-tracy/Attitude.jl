@@ -482,7 +482,7 @@ function pdot_from_w(p::Vec,w::Vec)::Vec
         ᴺṗᴮ
     """
 
-    return ((1+norm(p)^2)/4) *(   eye(3) + 2*(hat(p)^2 + hat(p))/(1+norm(p)^2)   )*w
+    return ((1+norm(p)^2)/4) *(   I + 2*(hat(p)^2 + hat(p))/(1+norm(p)^2)   )*w
 
 end
 
