@@ -58,6 +58,8 @@ function wrap_to_pm_pi(theta::Real)::Real
     return theta
 end
 
+export skew_from_vec
+
 function skew_from_vec(v::Vec)::Mat
     """Skew symmetric matrix from a vector.
 
