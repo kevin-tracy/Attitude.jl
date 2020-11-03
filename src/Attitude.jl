@@ -206,6 +206,16 @@ function ortho_logm(Q::Mat)::Mat
     return skew_from_vec(phi)
 end
 
+export H_mat
+
+function H_mat()::Mat
+    """matrix for converting vector to pure quaternion. Scalar last"""
+    return [1 0 0;
+            0 1 0;
+            0 0 1;
+            0 0 0.0]
+end
+
 export phi_from_dcm
 
 function phi_from_dcm(Q::Mat)::Vec
