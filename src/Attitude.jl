@@ -11,6 +11,15 @@ include(joinpath(dirname(@__FILE__),"types.jl"))
 
 export wrap_to_2pi
 
+export cfill
+function cfill(nx,N)
+    """clean version of fill without any references"""
+    return [zeros(nx) for i = 1:N]
+end
+function cfill(nu,nx,N)
+    """clena version of fill without any references for vec of mats"""
+    return [zeros(nu,nx) for i = 1:N]
+end
 function wrap_to_2pi(theta::Real)::Real
     """Takes an angle theta and returns the same angle theta ∈ [0,2π].
 
