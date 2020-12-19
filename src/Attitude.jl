@@ -221,11 +221,10 @@ end
 export H_mat
 
 function H_mat()::Mat
-    """matrix for converting vector to pure quaternion. Scalar last"""
-    return @SArray [1 0 0;
+    """matrix for converting vector to pure quaternion. Scalar first"""
+    return @SArray [0 0 0;1 0 0;
             0 1 0;
-            0 0 1;
-            0 0 0.0]
+            0 0 1]
 end
 
 export phi_from_dcm
@@ -309,12 +308,12 @@ export ⊙
 function ⊙(q1::Vec, q2::Vec)::Vec
     """Quaternion multiplication, hamilton product, scalar last"""
 
-    v1 = @views q1[1:3]
-    s1 = @views q1[4]
-    v2 = @views q2[1:3]
-    s2 = @views q2[4]
+    v1 = @views q1[2:4]
+    s1 = q1[1]
+    v2 = @views q2[2:4]
+    s2 = q2[1]
 
-    return SVector{4}([s1 * v2 + s2 * v1 + cross(v1, v2);(s1 * s2 - dot(v1, v2))])
+    return SVector{4}([(s1 * s2 - dot(v1, v2));s1 * v2 + s2 * v1 + cross(v1, v2)])
 
 end
 
@@ -331,21 +330,27 @@ function dcm_from_q(q::Vec)::Mat
 
     # pull our the parameters from the quaternion
     # q1,q2,q3,q4 = normalize(q)
-    q = normalize(q)
-    # DCM
-    return @SArray [(2*q[1]^2+2*q[4]^2-1)   2*(q[1]*q[2] - q[3]*q[4])   2*(q[1]*q[3] + q[2]*q[4]);
-          2*(q[1]*q[2] + q[3]*q[4])  (2*q[2]^2+2*q[4]^2-1)   2*(q[2]*q[3] - q[1]*q[4]);
-          2*(q[1]*q[3] - q[2]*q[4])   2*(q[2]*q[3] + q[1]*q[4])  (2*q[3]^2+2*q[4]^2-1)]
+    # q = normalize(q)
+    # # DCM
+    # return @SArray [(2*q[1]^2+2*q[4]^2-1)   2*(q[1]*q[2] - q[3]*q[4])   2*(q[1]*q[3] + q[2]*q[4]);
+    #       2*(q[1]*q[2] + q[3]*q[4])  (2*q[2]^2+2*q[4]^2-1)   2*(q[2]*q[3] - q[1]*q[4]);
+    #       2*(q[1]*q[3] - q[2]*q[4])   2*(q[2]*q[3] + q[1]*q[4])  (2*q[3]^2+2*q[4]^2-1)]
+    # pull our the parameters from the quaternion
+    q4,q1,q2,q3 = normalize(q)
 
+    # DCM
+    Q = @SArray [(2*q1^2+2*q4^2-1)   2*(q1*q2 - q3*q4)   2*(q1*q3 + q2*q4);
+          2*(q1*q2 + q3*q4)  (2*q2^2+2*q4^2-1)   2*(q2*q3 - q1*q4);
+          2*(q1*q3 - q2*q4)   2*(q2*q3 + q1*q4)  (2*q3^2+2*q4^2-1)]
 end
 
 export qconj
 
 function qconj(q::Vec)::Vec
-    """Conjugate of the quaternion (scalar last)"""
+    """Conjugate of the quaternion (scalar first)"""
 
     # return [-q[1:3]; q[4]]
-    return SVector(-q[1],-q[2],-q[3],q[4])
+    return SVector(q[1],-q[2],-q[3],-q[4])
 end
 
 export phi_from_q
@@ -354,8 +359,8 @@ function phi_from_q(q::Vec)::Vec
     """axis angle from quaternion (scalar last)"""
 
     # v = @views q[1:3]
-    v = SVector(q[1],q[2],q[3])
-    s = q[4]
+    v = SVector(q[2],q[3],q[4])
+    s = q[1]
     normv = norm(v)
 
     if normv == 0.0
@@ -374,10 +379,10 @@ function q_from_phi(ϕ::Vec)::Vec
 
     θ = norm(ϕ)
     if abs(θ) < 0.0000000001
-        return [0; 0; 0; 1.0]
+        return [1; 0; 0; 0]
     else
         r = ϕ / θ
-        return [r * sin(θ / 2); cos(θ / 2)]
+        return [cos(θ / 2);r * sin(θ / 2)]
     end
 end
 
@@ -412,7 +417,7 @@ function q_from_dcm(dcm::Mat)::Vec
         q1 = (R[1,3] + R[3,1])*r
         q2 = (R[2,3] + R[3,2])*r
     end
-    q = [q1;q2;q3;q4]
+    q = [q4;q1;q2;q3]
     if q4<0
         q = -q
     end
@@ -430,7 +435,7 @@ export q_shorter
 
 function q_shorter(q::Vec)::Vec
 
-    if q[4]<0
+    if q[1]<0
         q = -q
     end
     return q
@@ -440,14 +445,14 @@ export g_from_q
 
 function g_from_q(q::Vec)::Vec
     """Rodgrigues parameter from quaternion (scalar last)"""
-    return q[1:3]/q[4]
+    return q[2:4]/q[1]
 end
 
 export q_from_g
 
 function q_from_g(g::Vec)::Vec
     """Quaternion (scalar last) from Rodrigues parameter"""
-    return (1/sqrt(1+dot(g,g)))*[g;1]
+    return (1/sqrt(1+dot(g,g)))*[1;g]
 end
 
 export dcm_from_g
@@ -461,14 +466,14 @@ export p_from_q
 
 function p_from_q(q::Vec)::Vec
     """MRP from quaternion (scalar last)"""
-    return q[1:3]/(1+q[4])
+    return q[2:4]/(1+q[1])
 end
 
 export q_from_p
 
 function q_from_p(p::Vec)::Vec
     """Quaternion (scalar last) from MRP"""
-    return (1/(1+dot(p,p)))*[2*p;(1-dot(p,p))]
+    return (1/(1+dot(p,p)))*[(1-dot(p,p));2*p]
 end
 
 export dcm_from_p

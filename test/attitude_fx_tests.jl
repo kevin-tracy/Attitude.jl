@@ -59,9 +59,9 @@ end
 
             x_quaternion = H_mat()*x
 
-            @test isapprox(x,x_quaternion[1:3],rtol = 1e-6)
+            @test isapprox(x,x_quaternion[2:4],rtol = 1e-6)
 
-            @test isapprox(x_quaternion[1:3],H_mat()'*x_quaternion,rtol = 1e-6)
+            @test isapprox(x_quaternion[2:4],H_mat()'*x_quaternion,rtol = 1e-6)
 
         end
     end
@@ -161,10 +161,10 @@ end
         t_vec = 0:dt:tf
         # integrate the attitudes
         p = zeros(3)
-        q = [0;0;0;1]
+        q = [1;0;0;0]
         for i = 1:length(t_vec)
             p += dt*pdot_from_w(p,ω)
-            q += dt*.5*q⊙[ω;0]
+            q += dt*.5*q⊙[0;ω]
         end
 
 
