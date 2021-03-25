@@ -616,7 +616,7 @@ end
 
 export L
 
-function L(q)
+function matL(q)
     qs = q[1]
     qv = SVector(q[2],q[3],q[4])
     return [qs  -qv'; qv (qs*I + skew_from_vec(qv))]
@@ -624,7 +624,7 @@ end
 
 export R
 
-function R(q)
+function Rmat(q)
     qs = q[1]
     qv = SVector(q[2],q[3],q[4])
     return [qs  -qv'; qv (qs*I - skew_from_vec(qv))]
@@ -633,7 +633,7 @@ end
 
 export G
 
-function G(q)
+function Gmat(q)
     """Quaternion to rodrigues parameter Jacobian"""
     s = q[1]
     v = SVector(q[2],q[3],q[4])
