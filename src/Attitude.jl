@@ -614,15 +614,15 @@ function run_all_attitude_tests()
     include(joinpath(dirname(@__DIR__),"test/attitude_fx_tests.jl"))
 end
 
-export L
+export Lmat
 
-function matL(q)
+function Lmat(q)
     qs = q[1]
     qv = SVector(q[2],q[3],q[4])
     return [qs  -qv'; qv (qs*I + skew_from_vec(qv))]
 end
 
-export R
+export Rmat
 
 function Rmat(q)
     qs = q[1]
@@ -631,7 +631,7 @@ function Rmat(q)
 end
 
 
-export G
+export Gmat
 
 function Gmat(q)
     """Quaternion to rodrigues parameter Jacobian"""
