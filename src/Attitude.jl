@@ -363,7 +363,7 @@ function q_from_phi(ϕ::Vec)::Vec
 
     θ = norm(ϕ)
     if abs(θ) < 0.0000000001
-        return [0; 0; 0; 1.0]
+        return [1; 0; 0; 0]
     else
         r = ϕ / θ
         return [r * sin(θ / 2); cos(θ / 2)]
