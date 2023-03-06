@@ -306,7 +306,7 @@ end
 export ⊙
 
 function ⊙(q1::Vec, q2::Vec)::Vec
-    """Quaternion multiplication, hamilton product, scalar last"""
+    """Quaternion multiplication, hamilton product, scalar first"""
 
     v1 = @views q1[2:4]
     s1 = q1[1]
@@ -326,16 +326,8 @@ end
 export dcm_from_q
 
 function dcm_from_q(q::Vec)::Mat
-    """DCM from quaternion, hamilton product, scalar last"""
+    """DCM from quaternion, hamilton product, scalar first"""
 
-    # pull our the parameters from the quaternion
-    # q1,q2,q3,q4 = normalize(q)
-    # q = normalize(q)
-    # # DCM
-    # return @SArray [(2*q[1]^2+2*q[4]^2-1)   2*(q[1]*q[2] - q[3]*q[4])   2*(q[1]*q[3] + q[2]*q[4]);
-    #       2*(q[1]*q[2] + q[3]*q[4])  (2*q[2]^2+2*q[4]^2-1)   2*(q[2]*q[3] - q[1]*q[4]);
-    #       2*(q[1]*q[3] - q[2]*q[4])   2*(q[2]*q[3] + q[1]*q[4])  (2*q[3]^2+2*q[4]^2-1)]
-    # pull our the parameters from the quaternion
     q4,q1,q2,q3 = normalize(q)
 
     # DCM
@@ -356,7 +348,7 @@ end
 export phi_from_q
 
 function phi_from_q(q::Vec)::Vec
-    """axis angle from quaternion (scalar last)"""
+    """axis angle from quaternion (scalar first)"""
 
     # v = @views q[1:3]
     v = SVector(q[2],q[3],q[4])
@@ -375,10 +367,10 @@ end
 export q_from_phi
 
 function q_from_phi(ϕ::Vec)::Vec
-    """Quaternion from axis angle vector, scalar last"""
+    """Quaternion from axis angle vector, scalar first"""
 
     θ = norm(ϕ)
-    if abs(θ) < 0.0000000001
+    if abs(θ) < 1e-12
         return [1; 0; 0; 0]
     else
         r = ϕ / θ
@@ -388,9 +380,8 @@ end
 
 export q_from_dcm
 
-function q_from_dcm(dcm::Mat)::Vec
-    """Kane/Levinson convention, scalar last"""
-    R = dcm
+function q_from_dcm(R::Mat)::Vec
+    """Kane/Levinson convention, scalar first"""
     T = R[1,1] + R[2,2] + R[3,3]
     if T> R[1,1] && T > R[2,2] && T>R[3,3]
         q4 = .5*sqrt(1+T)
@@ -419,10 +410,10 @@ function q_from_dcm(dcm::Mat)::Vec
     end
     q = [q4;q1;q2;q3]
     if q4<0
-        q = -q
+        return -q
+    else
+        return q
     end
-
-    return q
 end
 
 export randq
@@ -444,15 +435,15 @@ end
 export g_from_q
 
 function g_from_q(q::Vec)::Vec
-    """Rodgrigues parameter from quaternion (scalar last)"""
+    """Rodgrigues parameter from quaternion (scalar first)"""
     return q[2:4]/q[1]
 end
 
 export q_from_g
 
 function q_from_g(g::Vec)::Vec
-    """Quaternion (scalar last) from Rodrigues parameter"""
-    return (1/sqrt(1+dot(g,g)))*[1;g]
+    """Quaternion (scalar first) from Rodrigues parameter"""
+    return normalize([1;g])
 end
 
 export dcm_from_g
