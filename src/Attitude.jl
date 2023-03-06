@@ -465,14 +465,14 @@ end
 export p_from_q
 
 function p_from_q(q::Vec)::Vec
-    """MRP from quaternion (scalar last)"""
+    """MRP from quaternion (scalar first)"""
     return q[2:4]/(1+q[1])
 end
 
 export q_from_p
 
 function q_from_p(p::Vec)::Vec
-    """Quaternion (scalar last) from MRP"""
+    """Quaternion (scalar first) from MRP"""
     return (1/(1+dot(p,p)))*[(1-dot(p,p));2*p]
 end
 
