@@ -3,7 +3,6 @@ module Attitude
 
 using LinearAlgebra
 using StaticArrays
-# greet() = print("Hello World!")
 
 # get the types
 include(joinpath(dirname(@__FILE__),"types.jl"))
