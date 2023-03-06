@@ -2,6 +2,7 @@ __precompile__(true)
 module Attitude
 
 using LinearAlgebra
+using StaticArrays
 # greet() = print("Hello World!")
 
 # get the types
@@ -10,6 +11,15 @@ include(joinpath(dirname(@__FILE__),"types.jl"))
 
 export wrap_to_2pi
 
+export cfill
+function cfill(nx,N)
+    """clean version of fill without any references"""
+    return [zeros(nx) for i = 1:N]
+end
+function cfill(nu,nx,N)
+    """clena version of fill without any references for vec of mats"""
+    return [zeros(nu,nx) for i = 1:N]
+end
 function wrap_to_2pi(theta::Real)::Real
     """Takes an angle theta and returns the same angle theta ∈ [0,2π].
 
@@ -75,8 +85,8 @@ function skew_from_vec(v::Vec)::Mat
         Skew symmetric matrix from the given vector :: AbstractArray{Float64,2}
     """
 
-    v = float(vec(v))
-    return [0 -v[3] v[2]; v[3] 0 -v[1]; -v[2] v[1] 0]
+    # v = float(vec(v))
+    return @SArray [0 -v[3] v[2]; v[3] 0 -v[1]; -v[2] v[1] 0]
 end
 
 export hat
@@ -97,7 +107,7 @@ function vec_from_skew(mat::Mat)::Vec
         3x1 vector
     """
 
-    return [mat[3, 2]; mat[1, 3]; mat[2, 1]]
+    return SVector(mat[3, 2], mat[1, 3], mat[2, 1])
 end
 
 
@@ -161,7 +171,7 @@ function skew_expm(B::Mat)::Mat
 
     # axis
     if theta == 0
-        r = [0.0; 0.0; 0.0]
+        r = SVector(0.0, 0.0, 0.0)
     else
         r = phi / theta
     end
@@ -211,11 +221,10 @@ end
 export H_mat
 
 function H_mat()::Mat
-    """matrix for converting vector to pure quaternion. Scalar last"""
-    return [1 0 0;
+    """matrix for converting vector to pure quaternion. Scalar first"""
+    return @SArray [0 0 0;1 0 0;
             0 1 0;
-            0 0 1;
-            0 0 0.0]
+            0 0 1]
 end
 
 export phi_from_dcm
@@ -238,7 +247,7 @@ function phi_from_dcm(Q::Mat)::Vec
 
     if abs(val - 1) < 1e-10
         # no rotation
-        phi = [0.0; 0.0; 0.0]
+        phi = SVector(0.0, 0.0, 0.0)
     elseif abs(val + 1) < 1e-10
         # 180 degree rotation
         M = I + Q
@@ -249,7 +258,7 @@ function phi_from_dcm(Q::Mat)::Vec
         # normal rotation (0-180 degrees)
         theta = acos(val)
         r = -(1 / (2 * sin(theta))) *
-            [Q[2, 3] - Q[3, 2]; Q[3, 1] - Q[1, 3]; Q[1, 2] - Q[2, 1]]
+            SVector(Q[2, 3] - Q[3, 2], Q[3, 1] - Q[1, 3], Q[1, 2] - Q[2, 1])
         phi = r * theta
     end
 
@@ -299,12 +308,12 @@ export ⊙
 function ⊙(q1::Vec, q2::Vec)::Vec
     """Quaternion multiplication, hamilton product, scalar last"""
 
-    v1 = q1[1:3]
-    s1 = q1[4]
-    v2 = q2[1:3]
-    s2 = q2[4]
+    v1 = @views q1[2:4]
+    s1 = q1[1]
+    v2 = @views q2[2:4]
+    s2 = q2[1]
 
-    return [(s1 * v2 + s2 * v1 + cross(v1, v2));(s1 * s2 - dot(v1, v2))]
+    return SVector{4}([(s1 * s2 - dot(v1, v2));s1 * v2 + s2 * v1 + cross(v1, v2)])
 
 end
 
@@ -320,22 +329,28 @@ function dcm_from_q(q::Vec)::Mat
     """DCM from quaternion, hamilton product, scalar last"""
 
     # pull our the parameters from the quaternion
-    q1,q2,q3,q4 = normalize(q)
+    # q1,q2,q3,q4 = normalize(q)
+    # q = normalize(q)
+    # # DCM
+    # return @SArray [(2*q[1]^2+2*q[4]^2-1)   2*(q[1]*q[2] - q[3]*q[4])   2*(q[1]*q[3] + q[2]*q[4]);
+    #       2*(q[1]*q[2] + q[3]*q[4])  (2*q[2]^2+2*q[4]^2-1)   2*(q[2]*q[3] - q[1]*q[4]);
+    #       2*(q[1]*q[3] - q[2]*q[4])   2*(q[2]*q[3] + q[1]*q[4])  (2*q[3]^2+2*q[4]^2-1)]
+    # pull our the parameters from the quaternion
+    q4,q1,q2,q3 = normalize(q)
 
     # DCM
-    Q = [(2*q1^2+2*q4^2-1)   2*(q1*q2 - q3*q4)   2*(q1*q3 + q2*q4);
+    Q = @SArray [(2*q1^2+2*q4^2-1)   2*(q1*q2 - q3*q4)   2*(q1*q3 + q2*q4);
           2*(q1*q2 + q3*q4)  (2*q2^2+2*q4^2-1)   2*(q2*q3 - q1*q4);
           2*(q1*q3 - q2*q4)   2*(q2*q3 + q1*q4)  (2*q3^2+2*q4^2-1)]
-
-    return Q
 end
 
 export qconj
 
 function qconj(q::Vec)::Vec
-    """Conjugate of the quaternion (scalar last)"""
+    """Conjugate of the quaternion (scalar first)"""
 
-    return [-q[1:3]; q[4]]
+    # return [-q[1:3]; q[4]]
+    return SVector(q[1],-q[2],-q[3],-q[4])
 end
 
 export phi_from_q
@@ -343,8 +358,9 @@ export phi_from_q
 function phi_from_q(q::Vec)::Vec
     """axis angle from quaternion (scalar last)"""
 
-    v = q[1:3]
-    s = q[4]
+    # v = @views q[1:3]
+    v = SVector(q[2],q[3],q[4])
+    s = q[1]
     normv = norm(v)
 
     if normv == 0.0
@@ -366,7 +382,7 @@ function q_from_phi(ϕ::Vec)::Vec
         return [1; 0; 0; 0]
     else
         r = ϕ / θ
-        return [r * sin(θ / 2); cos(θ / 2)]
+        return [cos(θ / 2);r * sin(θ / 2)]
     end
 end
 
@@ -401,7 +417,7 @@ function q_from_dcm(dcm::Mat)::Vec
         q1 = (R[1,3] + R[3,1])*r
         q2 = (R[2,3] + R[3,2])*r
     end
-    q = [q1;q2;q3;q4]
+    q = [q4;q1;q2;q3]
     if q4<0
         q = -q
     end
@@ -412,14 +428,14 @@ end
 export randq
 
 function randq()::Vec
-    return normalize(randn(4))
+    return SVector{4}(normalize(randn(4)))
 end
 
 export q_shorter
 
 function q_shorter(q::Vec)::Vec
 
-    if q[4]<0
+    if q[1]<0
         q = -q
     end
     return q
@@ -429,14 +445,14 @@ export g_from_q
 
 function g_from_q(q::Vec)::Vec
     """Rodgrigues parameter from quaternion (scalar last)"""
-    return q[1:3]/q[4]
+    return q[2:4]/q[1]
 end
 
 export q_from_g
 
 function q_from_g(g::Vec)::Vec
     """Quaternion (scalar last) from Rodrigues parameter"""
-    return (1/sqrt(1+dot(g,g)))*[g;1]
+    return (1/sqrt(1+dot(g,g)))*[1;g]
 end
 
 export dcm_from_g
@@ -449,15 +465,15 @@ end
 export p_from_q
 
 function p_from_q(q::Vec)::Vec
-    """MRP from quaternion (scalar last)"""
-    return q[1:3]/(1+q[4])
+    """MRP from quaternion (scalar first)"""
+    return q[2:4]/(1+q[1])
 end
 
 export q_from_p
 
 function q_from_p(p::Vec)::Vec
-    """Quaternion (scalar last) from MRP"""
-    return (1/(1+dot(p,p)))*[2*p;(1-dot(p,p))]
+    """Quaternion (scalar first) from MRP"""
+    return (1/(1+dot(p,p)))*[(1-dot(p,p));2*p]
 end
 
 export dcm_from_p
@@ -536,7 +552,7 @@ end
 
 export mat_from_vec
 
-function mat_from_vec(a::Union{Array{Array{Float64,1},1},Array{Array{Float32,1},1}})
+function mat_from_vec(a::Vector)
     "Turn a vector of vectors into a matrix"
 
 
@@ -595,7 +611,33 @@ end
 export run_all_attitude_tests
 
 function run_all_attitude_tests()
-    include(joinpath(dirname(@__FILE__),"attitude_fx_tests.jl"))
+    include(joinpath(dirname(@__DIR__),"test/attitude_fx_tests.jl"))
+end
+
+export Lmat
+
+function Lmat(q)
+    qs = q[1]
+    qv = SVector(q[2],q[3],q[4])
+    return [qs  -qv'; qv (qs*I + skew_from_vec(qv))]
+end
+
+export Rmat
+
+function Rmat(q)
+    qs = q[1]
+    qv = SVector(q[2],q[3],q[4])
+    return [qs  -qv'; qv (qs*I - skew_from_vec(qv))]
+end
+
+
+export Gmat
+
+function Gmat(q)
+    """Quaternion to rodrigues parameter Jacobian"""
+    s = q[1]
+    v = SVector(q[2],q[3],q[4])
+    return [-v'; (s*I + skew_from_vec(v))]
 end
 
 end # module
